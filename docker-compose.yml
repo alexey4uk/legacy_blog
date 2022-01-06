@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+    postgres:
+      build:
+        context: .
+        dockerfile: docker/postgres/Dockerfile
+        args:
+          DB_LOCALE: $DB_LOCALE
+      container_name: postgres
+      restart: always
+      env_file:
+        - .env
+      environment:
+        - POSTGRES_DB=${DB_NAME}
+        - POSTGRES_USER=${DB_USER}
+        - POSTGRES_PASSWORD=${DB_PASSWORD}
+        - POSTGRES_HOST_AUTH_METHOD=md5
+      ports:
+        - "${DB_PORT}:${DB_PORT}"
+      volumes:
+        - pgsqlstudy:/var/lib/postgresql/data
+      networks:
+        - study
+
+    php:
+      build:
+        context: .
+        dockerfile: docker/php/Dockerfile
+        args:
+          APP_WORKDIR: $APP_WORKDIR
+      container_name: php
+      restart: always
+      env_file:
+        - .env
+      depends_on:
+        - postgres
+      ports:
+        - "${PHP_PORT}:${PHP_PORT}"
+      volumes:
+        - .:${APP_WORKDIR}
+      networks:
+        - study
+
+    apache:
+      build:
+        context: .
+        dockerfile: docker/apache/Dockerfile
+        args:
+          APP_WORKDIR: $APP_WORKDIR
+      container_name: apache
+      restart: always
+      domainname: localhost
+      hostname: localhost
+      ports:
+        - "80:80"
+        - "443:443"
+      volumes:
+        - .:${APP_WORKDIR}
+      depends_on:
+        - postgres
+        - php
+      networks:
+        - study
+
+    adminer:
+      image: adminer:4.8.1
+      container_name: adminer
+      restart: always
+      depends_on:
+        - postgres
+      ports:
+        - "8080:8080"
+      networks:
+        - study
+
+
+volumes:
+  pgsqlstudy:
+          
+networks:
+  study:
