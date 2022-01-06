@@ -39,6 +39,6 @@ class MainController
 
     public function read()
     {
-        //read
+        //
     }
 }
